@@ -45,4 +45,3 @@ Dal.with(User.class).query(sql -> sql.SELECT("id,name").WHERE("name=#{name}"), u
 ## 代码
 
 https://github.com/scofier/SimpleCurd
-
