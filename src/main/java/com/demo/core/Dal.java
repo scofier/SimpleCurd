@@ -1,4 +1,4 @@
-package com.demo.springeventstore.core;
+package com.demo.core;
 
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ResultMap;

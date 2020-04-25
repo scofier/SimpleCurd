@@ -1,4 +1,4 @@
-package com.demo.springeventstore.web;
+package com.demo.web;
 
 
 import javax.persistence.Entity;

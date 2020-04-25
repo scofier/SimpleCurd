@@ -1,4 +1,4 @@
-package com.demo.springeventstore.core;
+package com.demo.core;
 
 import org.apache.ibatis.annotations.*;
 import org.apache.ibatis.builder.annotation.ProviderContext;

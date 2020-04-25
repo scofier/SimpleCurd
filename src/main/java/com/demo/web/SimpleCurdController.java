@@ -1,8 +1,7 @@
-package com.demo.springeventstore.web;
+package com.demo.web;
 
-import com.demo.springeventstore.core.BaseMapper;
-import com.demo.springeventstore.core.Dal;
-import org.springframework.context.ApplicationEventPublisher;
+import com.demo.core.BaseMapper;
+import com.demo.core.Dal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

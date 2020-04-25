@@ -1,7 +1,7 @@
-package com.demo.springeventstore;
+package com.demo;
 
-import com.demo.springeventstore.core.BaseMapper;
-import com.demo.springeventstore.core.Dal;
+import com.demo.core.BaseMapper;
+import com.demo.core.Dal;
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.beans.factory.InjectionPoint;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
