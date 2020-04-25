@@ -1,9 +1,14 @@
 package com.demo.springeventstore.web;
 
 
+import javax.persistence.Entity;
+import javax.persistence.Table;
+
 /**
  * @author sk
  */
+@Entity
+@Table(name = "user")
 public class User {
 
     String id;

@@ -1,0 +1,10 @@
+
+spring:
+  main:
+    banner-mode: off
+  datasource:
+    driverClassName: com.mysql.jdbc.Driver
+    username: root
+    password: root
+    url: jdbc:mysql://127.0.0.1:3306/etask?useUnicode=true&useSSL=false&characterEncoding=utf8
+
