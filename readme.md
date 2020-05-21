@@ -1,6 +1,6 @@
 ## 前言
 
-使用Mybatis，通常需要写Entity，Mapper（java、xml），对于小项目很麻烦，有没有只写Entity就可以进行CURD呢？
+使用Mybatis，通常需要写Entity，Mapper（java、xml），对于小项目很麻烦，有没有只写Entity就可以进行CURD呢？答案是肯定的
 
 ## 我们的需求
 ```
