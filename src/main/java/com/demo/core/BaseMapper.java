@@ -192,11 +192,14 @@ public interface BaseMapper<Entity> {
         public SQL sql(Object entities, ProviderContext context) {
             Map<String, Object> param = (Map)entities;
             String inField = (String)param.get("column");
-            String idStr = "(" + String.join(",", Arrays.stream((Serializable[])param.get("ids")).map(String::valueOf).toArray(String[]::new)) + ")";
+            Serializable[] ids = (Serializable[])param.get("array");
+            String idStr = " <foreach item='item' collection='array' open='(' separator=',' close=')'>#{item}</foreach> ";
+            String where = (ids !=null && ids.length>0) ? (inField + " IN " + idStr) : " 1=1 ";
+
             SQL sql = new SQL()
                     .SELECT(table.getSelectColumns())
                     .FROM(table.getTableName())
-                    .WHERE((inField != null ? inField : table.getPrimaryKeyColumn()) + " IN " + idStr);
+                    .WHERE(where);
 
             return sql.commandType(SqlCommandType.SELECT);
         }

@@ -41,6 +41,24 @@ User user = new User();
 Dal.with(User.class).query(sql -> sql.SELECT("id,name").WHERE("name=#{name}"), user);
 ```
 
+## 项目代码
+
+```
+├── java
+│   └── com
+│       └── demo
+│           ├── SimpleCurdApplication.java
+│           ├── core
+│           │   ├── BaseMapper.java
+│           │   ├── Dal.java
+│           │   └── SpringUtil.java
+│           └── web
+│               ├── SimpleCurdController.java
+│               └── User.java
+└── resources
+    └── application.yml
+```
+
 
 ## 代码
 
