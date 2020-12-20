@@ -5,7 +5,7 @@
 ## 我们的需求
 ```
 1、只写少量代码，实现CURD
-2、少量配置，完成类似ActiveRecord
+2、少量配置，完成类似Wrapper
 3、无缝兼容原有的Mapper
 4、再包含通用Mapper？
 ```
@@ -15,7 +15,6 @@
 
 1、只需要定义一个 pojo ，就可以完成CURD
 ```java
-@Entity
 @Table(name = "user")
 public class User {
     String id;
@@ -30,7 +29,7 @@ public class User {
 @Resource
 BaseMapper<User> userBaseMapper;
 ```
-3、类似ActiveRecord
+3、简单Wrapper
 ```java
 User user = new User();
 Dal.with(User.class).select(user);
