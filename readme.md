@@ -19,9 +19,7 @@
 public class User {
     String id;
     String name;
-    String status;
     String phone;
-    String password;
 }
 ```
 2、类似baseMapper使用，直接注入（无需写UserMapper）
