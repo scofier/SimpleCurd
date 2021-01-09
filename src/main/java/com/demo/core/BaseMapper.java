@@ -56,7 +56,7 @@ public interface BaseMapper<Entity> {
     Entity selectOne(Entity criteria);
 
     @SelectProvider(type = SelectInSqlProvider.class, method = "invoke")
-    List<Entity> selectByColumn(@Param("column") String column, @Param("ids") Serializable[] ids);
+    List<Entity> selectByColumn(@Param("column") String column, @Param("array") Serializable[] ids);
 
     @SelectProvider(type = CountByCriteriaSqlProvider.class, method = "invoke")
     Long count(Entity criteria);
@@ -64,17 +64,13 @@ public interface BaseMapper<Entity> {
     @SelectProvider(type = SelectBySqlProvider.class, method = "invoke")
     List<Entity> query(@Param("sqlBuild") Function<SQL, SQL> sqlBuild, @Param("entity") Object criteria);
 
-    @Select("${sql}")
-    List<HashMap<?,?>> sqlQuery(String sql);
-
-
-    default List<Entity> selectByIds(@Param("ids") Serializable[] ids) {
+    default List<Entity> selectByIds(@Param("array") Serializable[] ids) {
         return selectByColumn("id", ids);
     }
 
     default boolean exist(Entity criteria) {
-        List<Entity> list = select(criteria);
-        return list != null && list.size() > 0;
+        Long count = count(criteria);
+        return count != null && count > 0;
     }
 
     default Integer upsert(Entity criteria) {
@@ -82,18 +78,17 @@ public interface BaseMapper<Entity> {
     }
 
 
-    class InsertSqlProvider extends AbstractSqlProviderSupport {
+    class InsertSqlProvider extends AbstractSqlProviderSupport implements WriteType {
         @Override
         public SQL sql(Object criteria,ProviderContext context) {
             return new SQL()
                     .INSERT_INTO(table.getTableName())
                     .INTO_COLUMNS(table.getColumns())
-                    .INTO_VALUES(Stream.of(table.getFields()).map(this::bindParameter).toArray(String[]::new))
-                    .commandType(SqlCommandType.INSERT);
+                    .INTO_VALUES(Stream.of(table.getFields()).map(this::bindParameter).toArray(String[]::new));
         }
     }
     @SuppressWarnings("all")
-    class BatchInsertSqlProvider extends AbstractSqlProviderSupport {
+    class BatchInsertSqlProvider extends AbstractSqlProviderSupport implements WriteType {
         @Override
         public SQL sql(Object entities, ProviderContext context) {
             int size = ((List)((Map)entities).get("list")).size();
@@ -104,15 +99,12 @@ public interface BaseMapper<Entity> {
             return new SQL()
                     .INSERT_INTO(table.getTableName())
                     .INTO_COLUMNS(table.getColumns())
-                    .INTO_VALUES(values)
-                    .commandType(SqlCommandType.INSERT);
-
-//            return sql.toString() + " VALUES " + String.join(",", values);
+                    .INTO_VALUES(values);
         }
     }
 
     @SuppressWarnings("all")
-    class UpdateSqlProvider extends AbstractSqlProviderSupport {
+    class UpdateSqlProvider extends AbstractSqlProviderSupport implements WriteType {
         @Override
         public SQL sql(Object criteria, ProviderContext context) {
             return new SQL()
@@ -120,45 +112,36 @@ public interface BaseMapper<Entity> {
                     .SET(Stream.of(table.getFields())
                             .filter(field -> !table.getPrimaryKeyColumn().equals(columnName(field)))
                             .map(field -> columnName(field) + " = " + bindParameter(field)).toArray(String[]::new))
-                    .WHERE(table.getPrimaryKeyColumn() + " = #{id}")
-                    .commandType(SqlCommandType.UPDATE);
+                    .WHERE(table.getPrimaryKeyColumn() + " = #{id}");
         }
     }
 
     @SuppressWarnings("all")
-    class UpdateSelectiveSqlProvider extends AbstractSqlProviderSupport {
+    class UpdateSelectiveSqlProvider extends AbstractSqlProviderSupport implements WriteType {
         @Override
         public SQL sql(Object entity, ProviderContext context) {
             return new SQL()
                     .UPDATE(table.getTableName())
-                    .SET(Stream.of(table.getFields())
-                            .filter(field -> value(entity, field) != null && !table.getPrimaryKeyColumn().equals(columnName(field)))
-                            .map(field -> columnName(field) + " = " + bindParameter(field)).toArray(String[]::new))
-                    .WHERE(table.getPrimaryKeyColumn() + " = #{id}")
-                    .commandType(SqlCommandType.UPDATE);
+                    .SET(ignoreNullAndCombind(entity, field -> columnName(field) + " = " + bindParameter(field), true))
+                    .WHERE(table.getPrimaryKeyColumn() + " = #{id}");
         }
     }
 
-    class DeleteSqlProvider extends AbstractSqlProviderSupport {
+    class DeleteSqlProvider extends AbstractSqlProviderSupport implements WriteType {
         @Override
         public SQL sql(Object criteria, ProviderContext context) {
             return new SQL()
                     .DELETE_FROM(table.getTableName())
-                    .WHERE(table.getPrimaryKeyColumn() + " = #{id}")
-                    .commandType(SqlCommandType.DELETE);
+                    .WHERE(table.getPrimaryKeyColumn() + " = #{id}");
         }
     }
 
-    class DeleteByCriteriaSqlProvider extends AbstractSqlProviderSupport {
+    class DeleteByCriteriaSqlProvider extends AbstractSqlProviderSupport implements WriteType {
         @Override
         public SQL sql(Object criteria, ProviderContext context) {
             return new SQL()
                     .DELETE_FROM(table.getTableName())
-                    .WHERE(Stream.of(table.getFields())
-                            .filter(field -> value(criteria, field) != null)
-                            .map(field -> columnName(field) + " = " + bindParameter(field))
-                            .toArray(String[]::new))
-                    .commandType(SqlCommandType.DELETE);
+                    .WHERE(ignoreNullAndCombind(criteria, field -> columnName(field) + " = " + bindParameter(field)));
         }
     }
 
@@ -168,8 +151,7 @@ public interface BaseMapper<Entity> {
             return new SQL()
                     .SELECT(table.getSelectColumns())
                     .FROM(table.getTableName())
-                    .WHERE(table.getPrimaryKeyColumn() + " = #{id}")
-                    .commandType(SqlCommandType.SELECT);
+                    .WHERE(table.getPrimaryKeyColumn() + " = #{id}");
         }
     }
 
@@ -183,7 +165,7 @@ public interface BaseMapper<Entity> {
             if (Util.isEmpty(orderBy)) {
                 orderBy = table.getPrimaryKeyColumn() + " DESC";
             }
-            return sql.ORDER_BY(orderBy).commandType(SqlCommandType.SELECT);
+            return sql.ORDER_BY(orderBy);
         }
     }
     @SuppressWarnings("all")
@@ -196,12 +178,10 @@ public interface BaseMapper<Entity> {
             String idStr = " <foreach item='item' collection='array' open='(' separator=',' close=')'>#{item}</foreach> ";
             String where = (ids !=null && ids.length>0) ? (inField + " IN " + idStr) : " 1=1 ";
 
-            SQL sql = new SQL()
+            return new SQL()
                     .SELECT(table.getSelectColumns())
                     .FROM(table.getTableName())
                     .WHERE(where);
-
-            return sql.commandType(SqlCommandType.SELECT);
         }
     }
 
@@ -211,12 +191,8 @@ public interface BaseMapper<Entity> {
             return new SQL()
                     .SELECT(table.getSelectColumns())
                     .FROM(table.getTableName())
-                    .WHERE(Stream.of(table.getFields())
-                            .filter(field -> value(criteria, field) != null)
-                            .map(field -> columnName(field) + " = " + bindParameter(field))
-                            .toArray(String[]::new))
-                    .ORDER_BY(table.getPrimaryKeyColumn() + " DESC")
-                    .commandType(SqlCommandType.SELECT);
+                    .WHERE(ignoreNullAndCombind(criteria, field -> columnName(field) + " = " + bindParameter(field)))
+                    .ORDER_BY(table.getPrimaryKeyColumn() + " DESC");
         }
     }
 
@@ -229,9 +205,7 @@ public interface BaseMapper<Entity> {
             Object criteria = param.get("entity");
 
             return sqlBuild.apply(
-                    new SQL()
-                            .FROM(table.getTableName())
-                            .commandType(SqlCommandType.SELECT)
+                    new SQL().FROM(table.getTableName())
             );
         }
     }
@@ -242,11 +216,7 @@ public interface BaseMapper<Entity> {
             return new SQL()
                     .SELECT("COUNT(*)")
                     .FROM(table.getTableName())
-                    .WHERE(Stream.of(table.getFields())
-                            .filter(field -> value(criteria, field) != null)
-                            .map(field -> columnName(field) + " = " + bindParameter(field))
-                            .toArray(String[]::new))
-                    .commandType(SqlCommandType.SELECT);
+                    .WHERE(ignoreNullAndCombind(criteria, field -> columnName(field) + " = " + bindParameter(field)));
         }
     }
 
@@ -255,12 +225,9 @@ public interface BaseMapper<Entity> {
         default void prePersist(){}
     }
 
+    interface WriteType{}
+
     class SQL extends AbstractSQL<SQL> {
-        SqlCommandType sqlCommandType;
-        public SQL commandType(SqlCommandType sqlCommandType) {
-            this.sqlCommandType = sqlCommandType;
-            return this;
-        }
         public SQL WHERE(boolean test, String condition) {
             return test ? super.WHERE(condition) : this;
         }
@@ -277,21 +244,37 @@ public interface BaseMapper<Entity> {
 
         protected TableInfo table;
 
-        public String invoke(Object criteria, ProviderContext context) {
+        String invoke(Object criteria, ProviderContext context) {
             return buildSql(criteria, tableInfo(context));
         }
 
-        public String buildSql(Object criteria , TableInfo table) {
+        String buildSql(Object criteria , TableInfo table) {
             this.table = table;
             SQL sql = sql(criteria, null);
             beforeInterceptor(criteria, sql);
-            return sql.toString();
+            return String.format("<script>%s</script>", sql.toString());
         }
 
-        public void beforeInterceptor(Object obj, SQL sql) {
-            if(obj instanceof Interceptor && sql.sqlCommandType != SqlCommandType.SELECT) {
+        void beforeInterceptor(Object obj, SQL sql) {
+            if(obj instanceof Interceptor && this instanceof WriteType) {
                 ((Interceptor)obj).prePersist();
             }
+        }
+
+        String[] ignoreNullAndCombind(Object criteria, Function<Field, String> func, boolean ignorePk) {
+            return Stream.of(table.getFields())
+                    .filter(field -> {
+                        Object value = value(criteria, field);
+                        // 过滤空字符串
+                        boolean noNull = value != null;
+                        return ignorePk ? (noNull && !table.getPrimaryKeyColumn().equals(columnName(field))) : noNull;
+                    })
+                    .map(func)
+                    .toArray(String[]::new);
+        }
+
+        String[] ignoreNullAndCombind(Object criteria, Function<Field, String> func) {
+            return ignoreNullAndCombind(criteria, func, false);
         }
 
         /**
@@ -332,6 +315,7 @@ public interface BaseMapper<Entity> {
     }
 
     class Util {
+        private final static String FIELD_SEP_TAG = "`";
 
         static TableInfo tableInfo(Class<?> entityClass) {
             //获取不含有@NoColumn注解的fields
@@ -415,7 +399,7 @@ public interface BaseMapper<Entity> {
          * @return str
          */
         static String selectColumnName(Field field) {
-            return " `"+columnName(field) + "` AS `" + field.getName() +"` ";
+            return columnName(field) + " AS " + FIELD_SEP_TAG + field.getName() + FIELD_SEP_TAG;
         }
 
         /**
@@ -425,10 +409,11 @@ public interface BaseMapper<Entity> {
          * @return str
          */
         static String columnName(Field field) {
-            if(field.isAnnotationPresent(Column.class)) {
-                return field.getAnnotation(Column.class).name();
+            Column column = field.getAnnotation(Column.class);
+            if(null != column && column.name().length() > 0) {
+                return column.name();
             }
-            return camel2Underscore(field.getName());
+            return FIELD_SEP_TAG + camel2Underscore(field.getName()) + FIELD_SEP_TAG;
         }
 
         static boolean isEmpty(String str) {

@@ -28,4 +28,20 @@ public class SimpleCurdController {
         return Dal.with(User.class).query(sql -> sql.SELECT("id,name").WHERE("name=#{name}"), user);
     }
 
+    @GetMapping("/test3")
+    public Object test3(User user) {
+        return Dal.with(User.class).query(sql -> {
+
+            sql.WHERE(user.getPhone() != null, "phone=#{phone}");
+
+            return sql.SELECT("id,name").WHERE("name=#{name}");
+
+            }, user);
+    }
+
+    @GetMapping("/test4")
+    public Object test4(String[] ids) {
+        return Dal.with(User.class).selectByColumn("name",ids);
+    }
+
 }

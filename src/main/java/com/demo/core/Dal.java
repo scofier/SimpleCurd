@@ -93,7 +93,7 @@ public class Dal {
         public List<E> selectByColumn(String column, Serializable[] criteria) {
             Map<String, Object> maps = new HashMap<>(2);
             maps.put("column", column);
-            maps.put("ids", criteria);
+            maps.put("array", criteria);
             String sql = new BaseMapper.SelectInSqlProvider().buildSql(maps, this.table);
             String msId = execute(sql, table.getEntityClass(), resultType, SqlCommandType.SELECT);
             return sqlSession.selectList(msId, criteria);
@@ -146,10 +146,7 @@ public class Dal {
             List<E> ret = select(criteria);
             return ret != null && !ret.isEmpty();
         }
-        @Override
-        public List<HashMap<?,?>> sqlQuery(String sql) {
-            throw new RuntimeException("Not Support");
-        }
+
         @Override
         public Integer batchInsert(List<E> es) {
             throw new RuntimeException("Not Support");
@@ -159,7 +156,6 @@ public class Dal {
 
     private String execute(String sql, Class<?> parameterType, Class<?> resultType, SqlCommandType sqlCommandType) {
         String msId = sqlCommandType.toString() + "." + parameterType.getName() + "." + sql.hashCode();
-        log.debug("Run sql : {}", sql);
         if (configuration.hasStatement(msId, false)) {
             return msId;
         }
