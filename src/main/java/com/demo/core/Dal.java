@@ -8,6 +8,10 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.*;
@@ -17,8 +21,10 @@ import java.util.function.Function;
 /**
  * @author sk
  */
-public class Dal {
+@Component
+public class Dal implements ApplicationContextAware {
     private static final Logger log = LoggerFactory.getLogger(Dal.class);
+    private static ApplicationContext applicationContext;
     private SqlSession sqlSession;
     private Configuration configuration;
     private Map<Class<?>, BaseMapper.TableInfo> cachedTableInfo = new ConcurrentHashMap<>();
@@ -28,12 +34,20 @@ public class Dal {
         this.sqlSession = sqlSession;
         this.configuration = sqlSession.getConfiguration();
     }
+
+    @Override
+    public void setApplicationContext(ApplicationContext context) throws BeansException {
+        if (applicationContext == null) {
+            applicationContext = context;
+        }
+    }
+
     private static class Holder {
         private static Dal instance = new Dal();
     }
 
     public static<T> Executor<T> with(Class<T> clazz) {
-        return with(clazz, SpringUtil.getBean(SqlSession.class));
+        return with(clazz, applicationContext.getBean(SqlSession.class));
     }
     public static<T> Executor<T> with(Class<T> clazz, SqlSession sqlSession) {
         Dal instance = Holder.instance;
