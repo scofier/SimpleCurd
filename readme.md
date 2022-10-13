@@ -47,8 +47,7 @@ Dal.with(User.class).query(sql -> sql.SELECT("id,name").WHERE("name=#{name}"), u
 │           ├── SimpleCurdApplication.java
 │           ├── core
 │           │   ├── BaseMapper.java
-│           │   ├── Dal.java
-│           │   └── SpringUtil.java
+│           │   └── Dal.java
 │           └── web
 │               ├── SimpleCurdController.java
 │               └── User.java
