@@ -32,7 +32,7 @@ public class SimpleCurdController {
     public Object test3(User user) {
         return Dal.with(User.class).query(sql -> {
 
-            sql.WHERE(user.getPhone() != null, "phone=#{phone}");
+            //sql.WHERE(user.getPhone() != null, "phone=#{phone}");
 
             return sql.SELECT("id,name").WHERE("name=#{name}");
 
